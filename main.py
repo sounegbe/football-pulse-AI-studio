@@ -1,10 +1,15 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 
 app = FastAPI()
 
+
+class GenerateRequest(BaseModel):
+    news: str
+    content_type: str
 
 app.mount(
     "/static",
@@ -20,3 +25,12 @@ def home():
         html_content = file.read()
 
     return html_content
+
+
+@app.post("/api/generate")
+def generate_content(request: GenerateRequest):
+
+    return {
+        "content": "Test response from Football Pulse AI Studio.",
+        "content_type": request.content_type
+    }

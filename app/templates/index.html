@@ -1,46 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>
-        Football Pulse AI Studio
-    </title>
+    <title>Football Pulse AI Studio</title>
 
     <link rel="stylesheet" href="/static/css/style.css">
-
 </head>
-
 
 <body>
 
-<div class="container">
+    <div class="workspace">
 
-    <h1>
-        ⚽ Football Pulse AI Studio
-    </h1>
-
-
-    <h2>
-        Create. Analyze. Publish.
-    </h2>
+        <header class="topbar">
+            <h1>⚽ Football Pulse AI Studio</h1>
+            <span>Creator Workspace</span>
+        </header>
 
 
-    <p>
-        The AI-powered workspace built for
-        football creators.
-        Generate news, scripts, analysis,
-        and content faster.
-    </p>
+        <main class="content">
+
+            <section class="creator-panel">
+
+                <h2>Create Football Content</h2>
+
+                <p>
+                    Turn football news into content ready for your audience.
+                </p>
 
 
-    <button>
-        Start Creating
-    </button>
+                <div class="content-types">
+
+                    <button class="type-button">
+                        📰 News Article
+                    </button>
+
+                    <button class="type-button active">
+                        🎬 YouTube Script
+                    </button>
+
+                    <button class="type-button">
+                        📱 Short Video
+                    </button>
+
+                    <button class="type-button">
+                        📣 Social Post
+                    </button>
+
+                </div>
 
 
-</div>
+                <label for="football-news">
+                    Football News
+                </label>
 
+                <textarea
+                    id="football-news"
+                    placeholder="Paste today's football news here..."
+                ></textarea>
+
+
+                <button class="generate-button">
+                    Generate Content
+                </button>
+
+            </section>
+
+
+            <section class="result-panel">
+
+                <h2>Generated Content</h2>
+
+                <div class="result-box">
+                    <p>
+                        Your generated content will appear here.
+                    </p>
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="/static/js/app.js"></script>
 
 </body>
 
