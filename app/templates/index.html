@@ -33,19 +33,19 @@
 
                 <div class="content-types">
 
-                    <button class="type-button">
+                    <button class="type-button" data-content-type="news_article" aria-pressed="false">
                         📰 News Article
                     </button>
 
-                    <button class="type-button active">
+                    <button class="type-button active" data-content-type="youtube_script" aria-pressed="true">
                         🎬 YouTube Script
                     </button>
 
-                    <button class="type-button">
+                    <button class="type-button" data-content-type="short_video" aria-pressed="false">
                         📱 Short Video
                     </button>
 
-                    <button class="type-button">
+                    <button class="type-button" data-content-type="social_post" aria-pressed="false">
                         📣 Social Post
                     </button>
 
@@ -58,6 +58,7 @@
 
                 <textarea
                     id="football-news"
+                    maxlength="2000"
                     placeholder="Paste today's football news here..."
                 ></textarea>
 
@@ -73,7 +74,7 @@
 
                 <h2>Generated Content</h2>
 
-                <div class="result-box">
+                <div class="result-box" role="status" aria-live="polite" aria-busy="false">
                     <p>
                         Your generated content will appear here.
                     </p>

@@ -189,6 +189,7 @@ textarea:focus {
 /* Generated content */
 
 .result-box {
+    white-space: pre-wrap;
     min-height: 350px;
 
     padding: 20px;
@@ -218,3 +219,4 @@ textarea:focus {
     }
 
 }
+.generate-button:disabled, .type-button:disabled { cursor: wait; opacity: 0.65; }

@@ -1,0 +1,13 @@
+CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), csrf_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, created_at TEXT NOT NULL);
+CREATE INDEX sessions_user_idx ON sessions(user_id);
+CREATE TABLE login_attempts (bucket TEXT NOT NULL, attempted_at INTEGER NOT NULL);
+CREATE INDEX login_attempts_idx ON login_attempts(bucket, attempted_at);
+CREATE TABLE projects (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), title TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0,1)), version INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE INDEX projects_owner_idx ON projects(owner_id, updated_at);
+CREATE TABLE drafts (project_id TEXT PRIMARY KEY REFERENCES projects(id), news TEXT NOT NULL, content TEXT NOT NULL, content_type TEXT NOT NULL CHECK (content_type IN ('news_article','youtube_script','short_video','social_post')), version INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE TABLE revisions (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), version INTEGER NOT NULL, news TEXT NOT NULL, content TEXT NOT NULL, content_type TEXT NOT NULL, restored_from TEXT, created_at TEXT NOT NULL, UNIQUE(project_id, version));
+CREATE TABLE assets (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), filename TEXT NOT NULL, media_type TEXT NOT NULL, size_bytes INTEGER NOT NULL, sha256 TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE INDEX assets_project_idx ON assets(project_id);
+CREATE TABLE jobs (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), kind TEXT NOT NULL, status TEXT NOT NULL CHECK (status IN ('queued','running','succeeded','failed','cancelled')), progress INTEGER NOT NULL DEFAULT 0 CHECK(progress BETWEEN 0 AND 100), idempotency_key TEXT NOT NULL, payload TEXT NOT NULL, result_asset_id TEXT REFERENCES assets(id), error_code TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(project_id, idempotency_key));
+CREATE INDEX jobs_project_idx ON jobs(project_id, created_at);

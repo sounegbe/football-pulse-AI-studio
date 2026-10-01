@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>M3 Research Verification QA</title>
+<style>body{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 24px;background:#0b1220;color:#eee}button{padding:14px;margin:10px 12px 10px 0;background:#22c55e;border:0;border-radius:6px;font-weight:bold}pre{white-space:pre-wrap;background:#111827;padding:24px;border-radius:8px;line-height:1.6}small{color:#aaa}</style></head>
+<body><h1>M3 Research Verification QA</h1><p>Isolated local test harness using synthetic fixture data. The supplied product frontend is unchanged.</p>
+<button id="run">Run research checks</button><button id="persist">Check persisted research</button>
+<pre role="status" id="result">Ready to test the actual protected research APIs.</pre>
+<small>No real football report, AI output or publishing operation is used in this check.</small>
+<script>
+const result=document.querySelector('#result');
+const run=document.querySelector('#run');
+const persist=document.querySelector('#persist');
+let csrf;
+async function request(path,method='GET',body,expected=200){
+ const response=await fetch(path,{method,headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{})},...(body?{body:JSON.stringify(body)}:{})});
+ const data=await response.json();
+ if(response.status!==expected)throw Error(`${method} ${path}: expected ${expected}, received ${response.status}`);
+ return data;
+}
+async function session(){csrf=(await request('/api/auth/session')).csrf_token;}
+function check(value,message){if(!value)throw Error(message);}
+run.addEventListener('click',async()=>{
+ run.disabled=true;persist.disabled=true;result.textContent='Running authenticated research checks...';
+ const lines=[];
+ const pass=text=>{lines.push('PASS — '+text);result.textContent=lines.join('\n');};
+ try{
+  await session();
+  const project=await request('/api/projects','POST',{title:'M3 synthetic browser QA'},201);
+  const base=`/api/projects/${project.id}/research`;
+  const sourceInput={url:'https://example.org/synthetic-fixture',title:'Synthetic fixture report',publisher:'QA fixture publisher',published_at:'2026-01-10T12:00:00Z',text:'Synthetic United won 2–1.'};
+  const source=await request(base+'/sources','POST',sourceInput,201);
+  const duplicate=await request(base+'/sources','POST',sourceInput);
+  check(duplicate.id===source.id,'Duplicate source changed identity');pass('Source attribution, date, text fingerprint and duplicate detection');
+  const claim=await request(base+'/claims','POST',{statement:sourceInput.text},201);
+  check(claim.status==='pending','New claim was trusted automatically');
+  const pendingJob={kind:'generation',idempotency_key:'qa-generation',payload:{claim_ids:[claim.id],content_type:'youtube_script'}};
+  await request(`/api/projects/${project.id}/jobs`,'POST',pendingJob,409);
+  await request(base+`/claims/${claim.id}/reviews`,'POST',{decision:'verified',reason:'QA attempts review without any source evidence.',expected_version:1},409);
+  pass('Unverified claim cannot be verified or queued for generation without evidence');
+  await request(base+`/claims/${claim.id}/evidence`,'POST',{source_id:source.id,quote:sourceInput.text,relation:'supports',expected_claim_version:1},201);
+  const reviewed=await request(base+`/claims/${claim.id}/reviews`,'POST',{decision:'verified',reason:'QA reviewer checked the dated exact quotation.',expected_version:2});
+  check(reviewed.status==='verified','Human review failed');
+  const bundle=await request(base+'/bundle','POST',{claim_ids:[claim.id]});
+  check(bundle.truth_guaranteed===false,'Bundle falsely guaranteed truth');
+  const job=await request(`/api/projects/${project.id}/jobs`,'POST',pendingJob,201);
+  check(job.payload.review_snapshot[0].claim_version===reviewed.version,'Job lost review version');
+  pass('Explicit human review produces a quoted evidence bundle and durable generation snapshot');
+  const correction=await request(base+'/sources','POST',{...sourceInput,url:'https://example.org/synthetic-correction',text:'Synthetic United did not win.'},201);
+  const contrary=await request(base+`/claims/${claim.id}/evidence`,'POST',{source_id:correction.id,quote:correction.text,relation:'contradicts',expected_claim_version:reviewed.version},201);
+  let current=await request(base+`/claims/${claim.id}`);
+  check(current.status==='pending','Contradiction failed to revoke review');
+  await request(base+`/claims/${claim.id}/reviews`,'POST',{decision:'verified',reason:'QA cannot ignore an unresolved contradiction.',expected_version:current.version},409);
+  check((await request(`/api/projects/${project.id}/jobs/${job.id}`)).status==='cancelled','Affected generation job was not cancelled');
+  pass('Contradictory evidence revokes verification, blocks re-review and cancels queued work');
+  await request(base+`/claims/${claim.id}/evidence/${contrary.id}/withdraw`,'POST',{reason:'The synthetic contradiction concerns another fixture; QA withdraws it.',expected_claim_version:current.version});
+  current=await request(base+`/claims/${claim.id}`);
+  await request(base+`/claims/${claim.id}/reviews`,'POST',{decision:'verified',reason:'QA reviewer checked the remaining valid dated evidence.',expected_version:current.version});
+  const ready=await request(base+'/readiness');
+  check(ready.all_claims_verified,'Final research is not ready');
+  current=await request(base+`/claims/${claim.id}`);
+  check(current.reviews.length===5,'Review history was not preserved');
+  localStorage.setItem('m3-qa-project',project.id);localStorage.setItem('m3-qa-claim',claim.id);
+  pass('Evidence withdrawal preserves history and requires a fresh review');
+  pass('Final state: verified by human review; all 5 review events remain recorded');
+  result.textContent=lines.join('\n')+'\n\nALL RESEARCH CHECKS PASSED';
+ }catch(error){result.textContent+='\nFAIL — '+error.message;}
+ finally{run.disabled=false;persist.disabled=false;}
+});
+persist.addEventListener('click',async()=>{
+ try{
+  await session();const project=localStorage.getItem('m3-qa-project'),claim=localStorage.getItem('m3-qa-claim');
+  if(!project||!claim)throw Error('Run the research checks first.');
+  const stored=await request(`/api/projects/${project}/research/claims/${claim}`);
+  check(stored.status==='verified'&&stored.reviews.length===5,'Stored review changed');
+  check(stored.evidence.some(e=>e.quote==='Synthetic United won 2–1.'),'Stored exact source quote changed');
+  result.textContent='PASS — Persisted verified claim and all 5 review events reload from the database.\nPASS — Original source quote and dates remain attached.\n\nPERSISTENCE CHECK PASSED';
+ }catch(error){result.textContent='FAIL — '+error.message;}
+});
+</script></body></html>

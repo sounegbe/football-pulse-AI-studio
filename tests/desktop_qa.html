@@ -1,0 +1,17 @@
+<!doctype html><html><head><title>M5 Desktop QA</title></head><body style="font:16px system-ui;background:#0f131c;color:white;padding:24px"><h1>M5 desktop verification</h1><p>Isolated synthetic account and fixture project. No real credentials or football claims.</p><button id="seed">Create synthetic saved draft and open desktop</button><p id="result" role="status"></p><script>
+document.querySelector('#seed').addEventListener('click',async()=>{
+ const result=document.querySelector('#result'),button=document.querySelector('#seed');button.disabled=true;
+ try {
+  const session=await (await fetch('/api/auth/session')).json();
+  async function post(path,method,body){const response=await fetch(path,{method,headers:{'Content-Type':'application/json','X-CSRF-Token':session.csrf_token},body:JSON.stringify(body)});if(!response.ok)throw Error('Fixture API request failed');return response.json();}
+  const project=await post('/api/projects','POST',{title:'M5 synthetic continuity fixture'});
+  await post(`/api/projects/${project.id}/draft`,'PUT',{news:'Synthetic fixture notes; not a real football report.',content:'## Chapter 1 — Opening\nFirst synthetic paragraph. <img onerror=alert(1)> remains literal text.\n\n## Chapter 2 — Closing\nSecond synthetic paragraph — source review is required.\n',content_type:'youtube_script',depth:2,audio_cues:false,content_mode:'manual',expected_version:0});
+  const clip=await (await fetch('/qa/fixture-video')).blob();
+  for (const [name,bytes] of [['preview.mp4',clip],['invalid-fixture.mp4',new Blob(['not a video'])]]) {
+    const asset=await fetch(`/api/projects/${project.id}/assets`,{method:'POST',headers:{'Content-Type':'video/mp4','X-Filename':name,'X-CSRF-Token':session.csrf_token},body:bytes});
+    if(!asset.ok)throw Error('Fixture asset upload failed');
+  }
+  location.href='/desktop?project='+project.id;
+ }catch(error){result.textContent=error.message;button.disabled=false;}
+});
+</script></body></html>

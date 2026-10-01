@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+html, body { max-width:100%; overflow-x:clip; }
+button:disabled { opacity:.5; cursor:not-allowed; }
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible { outline:2px solid #00ff87; outline-offset:3px; }
+#generated-content, #prompter-text { white-space:pre-wrap; overflow-wrap:anywhere; }
+#generated-content { min-height:180px; }
+.format-card:has(input:checked) { background:#262a34; outline:1px solid #00ff87; }
+.format-card:not(:has(input:checked)) { background:#181b25; box-shadow:none; }
+main > div { min-width:0; }
+dialog { background:#181b25; color:#dfe2ef; padding:24px; max-width:90vw; max-height:85vh; overflow:auto; border:1px solid #00ff87; }
+@media (min-width:900px) { main > div { max-width:1100px; margin:auto; } }
+/* M5: preserve supplied desktop shell and add saved-work controls. */
+#desktop-main > div { max-width:none; margin:0; }
+#desktop-sidebar { overflow-y:auto; }
+#desktop-header { overflow-x:auto; }
+#scriptContent, #desktop-prompter-text, #notice-body { white-space:pre-wrap; overflow-wrap:anywhere; }
+#scriptContent { min-height:240px; }
+#desktop-prompter-text { font-size:24px; line-height:1.7; }
+#desktop-prompter:fullscreen { max-width:none; max-height:none; width:100%; height:100%; }
+.desktop-action, dialog button { padding:8px 12px; border:1px solid #3b4b3d; border-radius:4px; background:#262a34; color:#dfe2ef; }
+dialog input { display:block; padding:8px; margin:6px 0 16px; background:#0a0e17; border:1px solid #3b4b3d; color:#dfe2ef; max-width:100%; }
+dialog h2 { font-size:22px; margin-bottom:12px; }
+dialog p { margin:12px 0; }
+.blueprint-card[aria-checked=true] { outline:2px solid #00ff87; background:#262a34; }
+.blueprint-card[aria-checked=false] { outline:none; box-shadow:none; background:#1c1f29; }
+[hidden] { display:none !important; }
+#desktop-chapters button[aria-pressed=true] { background:#00ff87; color:#003919; }
+#desktop-chapters button { padding:6px 10px; border-radius:4px; background:#262a34; }
+#navigation-view button { margin:4px; }
+#sidebar-toggle { display:none; }
+@media (max-width:1023px) {
+ #desktop-sidebar { display:none; width:260px; padding-top:64px; }
+ #desktop-sidebar.sidebar-open { display:flex; }
+ #desktop-shell { margin-left:0; padding-left:0; }
+ #desktop-header { left:0; width:100%; z-index:60; }
+ #desktop-header > div:first-of-type { display:none; }
+ #sidebar-toggle { display:block; flex-shrink:0; padding:10px; }
+ #desktop-main .px-gutter-lg { padding-left:12px; padding-right:12px; }
+}
+@media (max-width:1023px) {
+ #desktop-header [data-action=new-project], #desktop-header > div:last-of-type > div:first-child { display:none; }
+}
+#media-player { width:100%; max-width:640px; max-height:60vh; margin-top:12px; }
+#media-assets button { margin:4px; }
+
+#generation-panel { margin-bottom:12px; min-width:0; }
+#generation-panel label { display:block; padding:6px; overflow-wrap:anywhere; }
+#generation-panel progress { width:100%; accent-color:#00ff87; }
+#generation-panel pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:240px; overflow:auto; padding:12px; background:#0a0e17; }
+#generation-history { display:flex; flex-wrap:wrap; gap:4px; }
+
+#generation-panel { font-size:12px; line-height:1.5; }
+#generation-panel h2 { font-size:14px; font-weight:700; }
+#generation-panel button { font-size:12px; }
+#generation-provider, #generation-status { overflow-wrap:anywhere; }
+#generation-panel progress { appearance:none; height:8px; border:0; border-radius:8px; }
+#generation-panel progress::-webkit-progress-bar { background:#31353f; border-radius:8px; }
+#generation-panel progress::-webkit-progress-value { background:#00ff87; border-radius:8px; }
+#generation-panel progress::-moz-progress-bar { background:#00ff87; border-radius:8px; }

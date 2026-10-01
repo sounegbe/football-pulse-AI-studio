@@ -17,3 +17,7 @@ uvicorn==0.51.0
 uvloop==0.22.1
 watchfiles==1.2.0
 websockets==16.1.1
+reportlab==4.4.3
+pillow==11.3.0
+charset-normalizer==3.4.3
+httpx==0.28.1

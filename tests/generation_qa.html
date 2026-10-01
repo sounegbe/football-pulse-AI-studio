@@ -1,0 +1,17 @@
+<!doctype html><html><head><title>M6 isolated generation QA</title></head><body><h1>Milestone 6 synthetic provider fixture</h1><p>Isolated test account, actual research/job APIs, no live provider request or credential entry.</p><button id="seed">Prepare reviewed project</button><p id="status" role="status"></p><script>
+document.getElementById('seed').onclick=async()=>{
+ const status=document.getElementById('status');const button=document.getElementById('seed');button.disabled=true;
+ try {
+ const session=await (await fetch('/api/auth/session')).json();
+ async function request(url,method='GET',body){const result=await fetch(url,{method,headers:{'Content-Type':'application/json','X-CSRF-Token':session.csrf_token},body:body?JSON.stringify(body):undefined});const data=await result.json();if(!result.ok)throw Error(data.detail?.message||'Fixture setup failed');return data;}
+ const project=await request('/api/projects','POST',{title:'M6 synthetic reviewed generation'});
+ const base='/api/projects/'+project.id+'/research';
+ const source=await request(base+'/sources','POST',{url:'https://example.org/m6-synthetic-report',title:'Synthetic test report',publisher:'QA fixture publisher',published_at:'2026-09-29T12:00:00Z',text:'Synthetic United won 2–1.'});
+ const claim=await request(base+'/claims','POST',{statement:'Synthetic United won 2–1.'});
+ await request(base+'/claims/'+claim.id+'/evidence','POST',{source_id:source.id,quote:'Synthetic United won 2–1.',relation:'supports',expected_claim_version:claim.version});
+ const current=await request(base+'/claims/'+claim.id);
+ await request(base+'/claims/'+claim.id+'/reviews','POST',{decision:'verified',reason:'I compared this synthetic fixture against its dated test quotation.',expected_version:current.version});
+ location.href='/desktop?project='+project.id;
+ }catch(error){status.textContent=error.message;button.disabled=false;}
+};
+</script></body></html>
