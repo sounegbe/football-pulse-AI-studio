@@ -9,15 +9,19 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 import json
 import secrets
 import time
+import os
 from app.backend.config import ROOT, Settings
 from app.backend.database import timestamp
 from app.backend.security import COOKIE, digest, provision_user
 from main import create_app
 from app.backend.generation_provider import GenerationConfig
-from tests.generation_fixture import QAGenerationProvider
+from tests.generation_fixture import QAGenerationProvider, QAGeminiProvider
 
 # The QA server uses disposable accounts/data, never the regular studio database.
-app = create_app(Settings(data_dir=ROOT / '.qa-data', allowed_origins=('http://terminal.local:4173', 'http://localhost:8000', 'http://127.0.0.1:8000')), generation_config=GenerationConfig(True,'qa-not-a-live-key','QA_ONLY_SYNTHETIC_PROVIDER',6000,10,('2','1','8')), generation_provider=QAGenerationProvider())
+qa_choice = ROOT / '.qa-provider'
+qa_provider = 'gemini' if (qa_choice.read_text().strip() if qa_choice.exists() else os.getenv('STUDIO_QA_PROVIDER')) == 'gemini' else 'openai'
+qa_config = GenerationConfig(True, 'qa-not-a-live-key', 'QA_ONLY_SYNTHETIC_PROVIDER', 6000, 10, ('2','1','8'), qa_provider)
+app = create_app(Settings(data_dir=ROOT / '.qa-data', allowed_origins=('http://terminal.local:4173', 'http://localhost:8000', 'http://127.0.0.1:8000')), generation_config=qa_config, generation_provider=QAGeminiProvider(qa_config) if qa_provider == 'gemini' else QAGenerationProvider())
 
 
 SCENARIO = Path(__file__).resolve().parents[1] / '.qa-scenario'

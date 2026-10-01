@@ -108,7 +108,7 @@ def logout(request: Request, user=Depends(current_user)):
 
 @router.get('/configuration')
 def configuration(request: Request, user=Depends(current_user)):
-    return {'generation_mode': 'stub', 'max_news_characters': 2000, 'max_asset_bytes': request.app.state.settings.max_asset_bytes, 'job_execution': 'generation_worker' if request.app.state.generation_config.ready else 'not_configured', 'generation_available': request.app.state.generation_config.ready, 'generation_test_provider': getattr(request.app.state.generation_worker.provider, 'is_test', False), 'generation_provider': 'openai', 'generation_model': request.app.state.generation_config.model or None, 'generation_rates_configured': request.app.state.generation_config.pricing is not None}
+    return {'generation_mode': 'stub', 'max_news_characters': 2000, 'max_asset_bytes': request.app.state.settings.max_asset_bytes, 'job_execution': 'generation_worker' if request.app.state.generation_config.ready else 'not_configured', 'generation_available': request.app.state.generation_config.ready, 'generation_test_provider': getattr(request.app.state.generation_worker.provider, 'is_test', False), 'generation_provider': request.app.state.generation_config.provider, 'generation_model': request.app.state.generation_config.model or None, 'generation_rates_configured': request.app.state.generation_config.pricing is not None}
 
 
 @router.post('/projects', status_code=201)

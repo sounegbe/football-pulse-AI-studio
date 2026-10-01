@@ -65,7 +65,7 @@
             const jobs=await request('/api/projects/'+id+'/generation?limit=20');
             if(token!==sequence)return;
             available=configuration.generation_available;
-            text('generation-provider',(configuration.generation_test_provider?'QA SIMULATION — ':'OpenAI — ')+(configuration.generation_model||'not configured'));
+            text('generation-provider',(configuration.generation_test_provider?'QA SIMULATION — ':((configuration.generation_provider==='gemini'?'Gemini':'OpenAI')+' — '))+(configuration.generation_model||'not configured'));
             const choices=$('generation-claims');choices.replaceChildren();
             const verified=new Set(ready.verified_claim_ids);
             for(const claim of claims.filter(c=>verified.has(c.id))){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=claim.id;box.dataset.statement=claim.statement;label.append(box,document.createTextNode(' '+claim.statement));choices.append(label);}

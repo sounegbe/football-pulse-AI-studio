@@ -12,6 +12,7 @@ data/
 .qa-data/
 node_modules/
 .qa-generation
+.qa-provider
 docs/downloads/
 .env.*
 !.env.example

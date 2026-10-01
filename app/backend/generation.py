@@ -10,7 +10,7 @@ from app.backend.research import ReviewedGeneration
 from app.backend.research_service import selected_snapshot, assert_job_review_current
 from app.backend.security import current_user, fail
 from app.backend.database import timestamp
-from app.backend.generation_provider import OpenAIProvider, ProviderError, build_prompt, calculate_cost, valid_usage
+from app.backend.generation_provider import OpenAIProvider, GeminiProvider, ProviderError, build_prompt, calculate_cost, valid_usage
 
 router = APIRouter(prefix='/api/projects/{project_id}/generation')
 
@@ -53,7 +53,7 @@ def enqueue(db, project_id, selection, key, config, retry_of=None):
         fail(429,'generation_limit','Generation limit reached: three active jobs or thirty requests per UTC day.')
     now, identity = timestamp(), str(uuid.uuid4())
     db.execute("INSERT INTO jobs VALUES (?,?,?,'queued',0,?,?,NULL,NULL,?,?)", (identity,project_id,'generation',key,payload,now,now))
-    db.execute('INSERT INTO generation_runs (job_id,provider,model,max_output_tokens,pricing,retry_of) VALUES (?,?,?,?,?,?)', (identity,'openai',config.model,config.max_output_tokens,json.dumps(config.pricing),retry_of))
+    db.execute('INSERT INTO generation_runs (job_id,provider,model,max_output_tokens,pricing,retry_of) VALUES (?,?,?,?,?,?)', (identity,config.provider,config.model,config.max_output_tokens,json.dumps(config.pricing),retry_of))
     return generation_dict(db,db.execute('SELECT * FROM jobs WHERE id=?',(identity,)).fetchone()), True
 
 
@@ -113,7 +113,7 @@ def retry_generation(project_id: str,job_id: str,body: RetryCreate,request: Requ
 class GenerationWorker:
     def __init__(self,database,config,provider=None):
         self.database,self.config=database,config
-        self.provider=provider or OpenAIProvider(config)
+        self.provider=provider or (GeminiProvider(config) if config.provider == 'gemini' else OpenAIProvider(config))
         self.stop_event,self.wake=threading.Event(),threading.Event()
         self.thread=None
 
@@ -171,6 +171,8 @@ class GenerationWorker:
                     return True
                 assert_job_review_current(db,current)
                 run=dict(db.execute('SELECT * FROM generation_runs WHERE job_id=?',(identity,)).fetchone())
+                if run['provider'] != self.config.provider or run['model'] != self.config.model:
+                    raise ProviderError('provider_configuration_changed')
                 db.execute("UPDATE generation_runs SET stage='requesting',billing_status='unknown' WHERE job_id=?",(identity,))
                 db.execute('UPDATE jobs SET progress=30,updated_at=? WHERE id=?',(timestamp(),identity))
             result=self.provider.generate(payload,run['model'],run['max_output_tokens'])
