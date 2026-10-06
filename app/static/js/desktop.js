@@ -39,7 +39,7 @@
         $('#account-open').textContent=account?'Account':'Sign in';
         $('#current-project').textContent=project?project.title:'No project selected';
         $('#desktop-title').textContent=project?project.title:'Content preview';
-        $('#desktop-mode').textContent=output?(mode==='stub'?'Test response - AI not connected':'Saved draft - not approved'):'No saved output';
+        $('#desktop-mode').textContent=output?(mode==='stub'?'Test response - AI not connected':dirty()?'Unsaved draft - not approved':'Saved draft - not approved'):'No draft output';
         $('#desktop-words').textContent=(output.trim()?output.trim().split(/\s+/u).length:0)+' words';
         if($('#result-chapter-count'))$('#result-chapter-count').textContent=core.splitChapters(output).length+' chapters';
         if($('#result-format'))$('#result-format').textContent=selected.replaceAll('_',' ');
