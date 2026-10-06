@@ -59,3 +59,21 @@ dialog p { margin:12px 0; }
 #generation-panel progress::-webkit-progress-bar { background:#31353f; border-radius:8px; }
 #generation-panel progress::-webkit-progress-value { background:#00ff87; border-radius:8px; }
 #generation-panel progress::-moz-progress-bar { background:#00ff87; border-radius:8px; }
+
+.research-workspace { display:grid; gap:16px; max-width:1000px; }
+.research-workspace section { padding:16px; background:#181b25; border:1px solid #3b4b3d; border-radius:8px; }
+.research-workspace h3 { font-size:18px; margin-bottom:12px; }
+.research-workspace h4 { font-size:16px; margin:12px 0; }
+.research-workspace form { display:grid; gap:12px; margin:12px 0; }
+.research-workspace label { display:grid; gap:6px; }
+.research-workspace input,.research-workspace textarea,.research-workspace select,#result-tone { padding:10px; color:#dfe2ef; background:#0a0e17; border:1px solid #3b4b3d; width:100%; min-width:0; }
+.research-workspace pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:250px; overflow:auto; padding:12px; }
+.research-workspace blockquote { border-left:3px solid #00ff87; padding:12px; white-space:pre-wrap; }
+.research-workspace p { margin:8px 0; overflow-wrap:anywhere; }
+.research-workspace button { min-height:44px; text-align:left; overflow-wrap:anywhere; }
+
+#draft-editor { width:100%; min-height:360px; padding:16px; background:#0a0e17; color:#dfe2ef; border:1px solid #3b4b3d; font:16px/1.6 monospace; resize:vertical; }
+#draft-editor-controls { display:grid; gap:12px; }
+#editor-tools p { margin:8px 0; }
+#revision-preview { white-space:pre-wrap; overflow-wrap:anywhere; max-height:40vh; overflow:auto; }
+#revision-list { display:flex; flex-wrap:wrap; gap:8px; }

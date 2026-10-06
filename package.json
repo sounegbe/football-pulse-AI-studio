@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/preview.mjs",
-    "test:frontend": "node --test tests/test_frontend.cjs tests/test_workspace.cjs tests/test_desktop.cjs tests/test_generation.cjs",
+    "test:frontend": "node --test tests/test_frontend.cjs tests/test_workspace.cjs tests/test_desktop.cjs tests/test_generation.cjs tests/test_research_ui.cjs",
     "build:css": "tailwindcss -i app/static/css/workspace.input.css -o app/static/css/workspace.css --minify"
   },
   "devDependencies": {

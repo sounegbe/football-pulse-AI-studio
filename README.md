@@ -108,3 +108,29 @@ The desktop result column now includes the supplied M6 generation panel. Refresh
 Live execution defaults to disabled. Configure `STUDIO_GENERATION_ENABLED=1`, a server-only `OPENAI_API_KEY`, and an explicit `STUDIO_OPENAI_MODEL`. Optional output/deadline and all-three pricing variables are detailed in `docs/MILESTONE_6_REPORT.md`. Run one API process; the lifespan starts/stops its single worker. Cancellation discards late content, but does not guarantee a remote request or charge stops. Unknown usage/cost stays unknown; running jobs interrupted by restart fail without re-submission.
 
 The local QA provider is isolated in `tests/generation_fixture.py`, never used by `main:app`. It is visibly synthetic, uses no live key, and exercises real APIs at `/qa/generation`. 90 automated tests pass; live OpenAI verification still requires configuration. M7 has not started.
+
+## M7 result viewing and core editing update (October 6)
+
+`/results` opens the creator/result shell with exact complete-script TXT download,
+chapter counts, complete copy, saved-snapshot PDF, and teleprompter controls.
+Regenerate with New Tone offers neutral, analytical, conversational and energetic
+tones. It creates an explicit attempt using the successful job's reviewed claims
+and original options; stale evidence is rejected by the server. It does not replace
+the editor automatically. Live provider verification remains pending.
+
+Research navigation now supports manual dated sources, supported article import,
+source corrections/withdrawal, claims, exact supporting/contradictory/contextual
+evidence, evidence withdrawal and explicit review decisions with audit history.
+
+Edit Mode provides a full-script Markdown text editor with bold/italic/heading/quote/
+bullet markers and editable timecode, B-roll and audio cue suggestions. Save Changes
+creates a versioned draft; Revision History previews a saved snapshot before an
+explicit restore creates a new version. Undo/redo is local to the current editor.
+This is the core M8 editing flow, not the complete supplied structured cue-card
+studio: chapter-specific frame associations and full rich-text presentation remain.
+
+The separate `render_demo:app` entry point requires explicit demo mode and an
+account password hash supplied privately through Render Environment. It redirects
+phone visits to the responsive creator shell and displays a storage-loss notice.
+Live generation remains disabled in this free demo. Do not treat its ephemeral
+database as durable storage. No publishing or paid resource is enabled.

@@ -4,7 +4,7 @@
     window.PulseGeneration={install({request,context,receive}) {
         const $=id=>document.getElementById(id);
         let projectId=null,sequence=0,current=null,available=false,pending=false,timer=null,preview=null,selection=null,submission=null;
-        let historyOffset=0,historyMore=false;const historyIds=new Set();
+        let historyOffset=0,historyMore=false,toneSubmission=null;const historyIds=new Set();
         function newKey(){return [...crypto.getRandomValues(new Uint8Array(16))].map(value=>value.toString(16).padStart(2,'0')).join('');}
         function text(id,value){$(id).textContent=value;}
         function status(value){text('generation-status',value);}
@@ -16,11 +16,13 @@
             $('generation-retry').disabled=pending||!available||!current||!['failed','cancelled'].includes(current.status);
             $('generation-recheck').disabled=pending||!current;
             $('generation-use').disabled=pending||!preview||context().busy;
+            const toneButton=$('result-tone-open');
+            if(toneButton)toneButton.disabled=pending||!available||!preview||current?.status!=='succeeded'||context().busy;
         }
         function contextChanged(){
             const next=context().project?.id??null;
             if(next!==projectId){
-                projectId=next;historyOffset=0;historyMore=false;historyIds.clear();sequence++;clearTimeout(timer);current=null;preview=null;selection=null;submission=null;available=false;
+                projectId=next;historyOffset=0;historyMore=false;historyIds.clear();sequence++;clearTimeout(timer);current=null;preview=null;selection=null;submission=null;toneSubmission=null;available=false;
                 $('generation-claims').replaceChildren();$('generation-history').replaceChildren();$('generation-preview').hidden=true;$('generation-preview').textContent='';$('generation-progress').value=0;
                 text('generation-timing','Not started');text('generation-usage','');text('generation-provider','Provider not configured');
                 if($('generation-use-dialog').open)$('generation-use-dialog').close();
@@ -104,6 +106,18 @@
             if(!preview||context().project?.id!==projectId||context().busy)return;
             receive({content:preview,payload:current.payload,job_id:current.id,provider:current.generation.provider});$('generation-use-dialog').close();
         });
-        contextChanged();return {contextChanged};
+        async function regenerateTone(tone){
+            if(!['neutral','analytical','conversational','energetic'].includes(tone))return;
+            if(pending||!available||!preview||current?.status!=='succeeded'||context().busy)return;
+            await action(async token=>{
+                const identity=current.id;
+                const payload={claim_ids:current.payload.claim_ids,content_type:current.payload.content_type,depth:current.payload.depth,audio_cues:current.payload.audio_cues,tone};
+                const fingerprint=JSON.stringify([identity,payload]);
+                if(toneSubmission?.fingerprint!==fingerprint)toneSubmission={fingerprint,key:newKey()};
+                const job=await request(base(),'POST',{...payload,idempotency_key:toneSubmission.key});
+                toneSubmission=null;await show(job,token);
+            });
+        }
+        contextChanged();return {contextChanged,regenerateTone};
     }};
 })();

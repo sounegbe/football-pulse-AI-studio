@@ -6,6 +6,7 @@
     let account=null, previousUser=null, csrf=null, project=null, version=0, selected='youtube_script', audio=true;
     let mediaUrl=null;
     let generationUI=null;
+    let editing=false,undo=[],redo=[],selectedRevision=null;
     let output='', mode='unknown', lastRequest=null, savedFingerprint=null, busy=false, chapter=0, view='create', navSequence=0;
     function message(text) {$('#desktop-status').textContent=text;}
     function draft() {return {news:input.value,content:output,content_type:selected,depth:Number(depth.value),audio_cues:audio,content_mode:mode};}
@@ -17,8 +18,18 @@
         $('#desktop-regenerate').disabled=busy||!lastRequest;
         $('#desktop-clear').disabled=busy||!output;
         $('#desktop-copy').disabled=busy||!output;
+        if($('#result-download'))$('#result-download').disabled=busy||!output;
         $('#desktop-pdf').disabled=busy||!account||!project||!version||!output||dirty();
         $('#draft-save').disabled=busy||!account||!project||project.archived===1;
+        if($('#editor-save')){
+            $('#editor-save').disabled=$('#draft-save').disabled;
+            $('#editor-history').disabled=busy||!account||!project;
+            $('#editor-revert').disabled=busy||!account||!project||!version;
+            $('#draft-editor').disabled=busy||project?.archived===1;
+            if($('#draft-editor').value!==output)$('#draft-editor').value=output;
+            $('#editor-undo').disabled=busy||!undo.length;$('#editor-redo').disabled=busy||!redo.length;
+            document.querySelectorAll('[data-editor-command]').forEach(button=>button.disabled=busy||project?.archived===1);
+        }
         $('#draft-reload').disabled=busy||!account||!project;
         $('#generateBtn').textContent=busy?'Working…':'Generate test response';
         generationUI?.contextChanged();
@@ -30,6 +41,8 @@
         $('#desktop-title').textContent=project?project.title:'Content preview';
         $('#desktop-mode').textContent=output?(mode==='stub'?'Test response - AI not connected':'Saved draft - not approved'):'No saved output';
         $('#desktop-words').textContent=(output.trim()?output.trim().split(/\s+/u).length:0)+' words';
+        if($('#result-chapter-count'))$('#result-chapter-count').textContent=core.splitChapters(output).length+' chapters';
+        if($('#result-format'))$('#result-format').textContent=selected.replaceAll('_',' ');
         $('#charCount').textContent=Array.from(input.value).length+' / 2000 chars';
         $('#depthLabel').textContent=depthNames[depth.value];
         cue.setAttribute('aria-checked',String(audio));cue.style.justifyContent=audio?'flex-end':'flex-start';cue.style.backgroundColor=audio?'#00ff87':'#31353f';
@@ -74,8 +87,9 @@
     }
     function applyDraft(saved) {
         clearMedia();
+        undo=[];redo=[];
         input.value=saved.news;output=saved.content;selected=saved.content_type;depth.value=String(saved.depth??3);audio=Boolean(saved.audio_cues??true);mode=saved.content_mode??'unknown';version=saved.version;
-        lastRequest=output?{news:input.value.trim(),content_type:selected,depth:Number(depth.value),audio_cues:audio}:null;
+        lastRequest=output&&mode==='stub'?{news:input.value.trim(),content_type:selected,depth:Number(depth.value),audio_cues:audio}:null;
         savedFingerprint=core.fingerprint(draft());chapter=0;chapters();
     }
     async function loadProject(id,discard=false) {
@@ -127,14 +141,7 @@
             addText(section,'pre',saved.content||'No saved draft output.');
         }else if(view==='research'){
             if(!project){addText(section,'p','Select a project first.');return;}
-            const data=await request('/api/projects/'+project.id+'/research/readiness');if(serial!==navSequence)return;
-            addText(section,'p','Verification records human review; it does not guarantee truth.');
-            addText(section,'p',`${data.verified_claim_ids.length} of ${data.items.length} claims currently meet the review requirements.`);
-            if(!data.items.length)addText(section,'p','No research claims have been saved for this project.');
-            else {
-                const labels={missing_supporting_evidence:'Add supporting evidence.',missing_dated_supporting_evidence:'Add a dated supporting source.',contradictory_evidence:'Resolve contradictory evidence.'};
-                data.items.forEach((item,index)=>addText(section,'p',`Claim ${index+1}: ${item.status}. ${item.blockers.map(blocker=>labels[blocker]||blocker.replaceAll('_',' ')).join(' ')}`));
-            }
+            await window.PulseResearch.render({root:section,request,project,active:()=>serial===navSequence&&view==='research'});
         }
     }
     async function generate(reuse=false) {
@@ -144,6 +151,7 @@
             message('Requesting a test response…');const data=await request('/api/generate','POST',selectedRequest);
             if(typeof data.content!=='string'||!data.content.trim()||data.mode!=='stub'||data.content_type!==selectedRequest.content_type||data.depth!==selectedRequest.depth||data.audio_cues!==selectedRequest.audio_cues)throw Error('The response does not match the request. Previous output is preserved.');
             output=data.content;mode='stub';lastRequest={...selectedRequest};chapter=0;chapters();message('Test response received. AI is not connected. Save explicitly to retain this draft.');
+            undo=[];redo=[];controls();
         });
     }
     async function save() {
@@ -182,6 +190,49 @@
     }));
     $('#generateBtn').addEventListener('click',()=>generate());$('#desktop-regenerate').addEventListener('click',()=>generate(true));
     $('#draft-save').addEventListener('click',save);$('#draft-reload').addEventListener('click',reload);
+    function editorMode(value){
+        editing=value;$('#draft-editor').hidden=!editing;$('#draft-editor-label').hidden=!editing;$('#editor-tools').hidden=!editing;content.hidden=editing;
+        $('#editor-edit').setAttribute('aria-pressed',String(editing));$('#editor-view').setAttribute('aria-pressed',String(!editing));
+        controls();if(editing)$('#draft-editor').focus();
+    }
+    function edit(value){
+        if(busy||project?.archived===1)return;
+        if(Array.from(value).length>200000){message('The script exceeds 200,000 characters.');controls();return;}
+        undo.push(output);if(undo.length>50)undo.shift();redo=[];output=value;mode='manual';lastRequest=null;chapters();
+        message('Manual edits are unsaved. Save Changes to create a revision.');
+    }
+    $('#editor-edit')?.addEventListener('click',()=>editorMode(true));$('#editor-view')?.addEventListener('click',()=>editorMode(false));
+    $('#editor-save')?.addEventListener('click',save);$('#editor-revert')?.addEventListener('click',reload);
+    $('#draft-editor')?.addEventListener('input',event=>edit(event.target.value));
+    document.querySelectorAll('[data-editor-command]').forEach(button=>button.addEventListener('click',()=>{
+        const editor=$('#draft-editor'),change=core.editSelection(output,editor.selectionStart,editor.selectionEnd,button.dataset.editorCommand);
+        if(change){edit(change.value);editor.focus();editor.setSelectionRange(change.start,change.end);}
+    }));
+    $('#editor-undo')?.addEventListener('click',()=>{if(busy||!undo.length)return;redo.push(output);output=undo.pop();mode='manual';lastRequest=null;chapters();});
+    $('#editor-redo')?.addEventListener('click',()=>{if(busy||!redo.length)return;undo.push(output);output=redo.pop();mode='manual';lastRequest=null;chapters();});
+    $('#editor-history')?.addEventListener('click',()=>operation(async()=>{
+        const ownedProject=project.id,list=$('#revision-list');list.replaceChildren();$('#revision-preview').textContent='';$('#revision-status').textContent='Select a saved revision to preview.';selectedRevision=null;$('#revision-restore').disabled=true;
+        let offset=0;const more=document.createElement('button');more.type='button';more.textContent='Load more revisions';list.append(more);
+        async function page(){more.disabled=true;try{
+            const data=await request(`/api/projects/${ownedProject}/revisions?limit=50&offset=${offset}`);
+            if(project?.id!==ownedProject)return;
+            for(const revision of data.items){const button=document.createElement('button');button.type='button';button.textContent=`Version ${revision.version} · ${revision.created_at}`;list.insertBefore(button,more);
+                button.addEventListener('click',()=>operation(async()=>{
+                    const saved=await request(`/api/projects/${ownedProject}/revisions/${revision.id}`);
+                    if(project?.id!==ownedProject||!$('#revision-dialog').open)return;
+                    selectedRevision={...saved,ownerProject:ownedProject};$('#revision-preview').textContent=saved.content;$('#revision-restore').disabled=project.archived===1;
+                    $('#revision-status').textContent=`Previewing version ${saved.version}. Restoring replaces the editor and creates a new saved version.`;
+                }));
+            }
+            offset+=data.items.length;more.hidden=data.items.length<50;
+        }finally{more.disabled=false;}}
+        more.addEventListener('click',()=>operation(page));await page();$('#revision-dialog').showModal();
+    }));
+    $('#revision-restore')?.addEventListener('click',()=>operation(async()=>{
+        if(!selectedRevision||project?.id!==selectedRevision.ownerProject)throw Error('Select a revision from the current project.');
+        const restored=await request(`/api/projects/${project.id}/revisions/${selectedRevision.id}/restore`,'POST',{expected_version:version});
+        applyDraft(restored);$('#revision-dialog').close();message('Revision restored as new saved version '+restored.version+'.');
+    }));
     $('#reload-confirm').addEventListener('click',async()=>{$('#reload-dialog').close();await loadProject(project.id,true);});
     $('#desktop-clear').addEventListener('click',()=>{if(busy)return;output='';mode='unknown';lastRequest=null;chapter=0;chapters();message('Output cleared. Input and settings remain. Save to retain this change.');});
     $('#desktop-copy').addEventListener('click',()=>operation(async()=>{
@@ -189,6 +240,16 @@
         try{if(!navigator.clipboard?.writeText)throw Error();await navigator.clipboard.writeText(output);message('Full draft copied, including every chapter.');}
         catch{message('Clipboard access failed. Select and copy the draft manually.');}
     }));
+    $('#result-download')?.addEventListener('click',()=>{
+        if(busy||!output)return;
+        const url=URL.createObjectURL(new Blob([output],{type:'text/plain;charset=utf-8'}));
+        const link=document.createElement('a');link.href=url;link.download='football-pulse-complete-script.txt';document.body.append(link);link.click();link.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),60000);message('Complete script download requested, including every chapter and unsaved text.');
+    });
+    $('#result-tone-open')?.addEventListener('click',()=>$('#result-tone-dialog').showModal());
+    $('#result-tone-confirm')?.addEventListener('click',async()=>{
+        const tone=$('#result-tone').value;$('#result-tone-dialog').close();await generationUI?.regenerateTone(tone);
+    });
     $('#desktop-pdf').addEventListener('click',()=>operation(async()=>{
         if(!project||!version||dirty())throw Error('Save or reload this draft before exporting.');
         const blob=await request(`/api/projects/${project.id}/draft/export.pdf?expected_version=${version}`,'GET',undefined,true);
@@ -247,7 +308,7 @@
     document.querySelectorAll('[data-action]').forEach(button=>{if(button.tagName==='A')return;button.addEventListener('click',()=>{
         if(button.dataset.action==='new-project')newProject();
         else if(button.dataset.action==='projects')navigate('projects');
-        else if(button.dataset.action==='help')notice('Workspace help','Choose a project, create a test response and save explicitly. Chapters come from headings in your draft. PDF exports include saved content only. No AI or live feed is connected.');
+        else if(button.dataset.action==='help')notice('Workspace help','Sign in and choose a project. Use Research to save sources, attach exact evidence and explicitly review claims. Refresh reviewed claims in Create to generate when a provider is configured. Edit Mode supports Markdown text and cue markers. Save explicitly for revisions; PDF uses the saved draft, and TXT downloads include current unsaved text. The provider panel reports availability.');
         else if(button.dataset.action==='jobs')operation(async()=>{if(!account||!project)throw Error('Sign in and select a project first.');const data=await request('/api/projects/'+project.id+'/jobs');notice('Project jobs',data.items.length?data.items.map(job=>`${job.kind}: ${job.status} (${job.progress}%)`).join('\n'):'No jobs in this project. Workers are not connected.');});
     });});
     $('#new-project-form').addEventListener('submit',event=>{event.preventDefault();operation(async()=>{
@@ -287,7 +348,7 @@
     generationUI=window.PulseGeneration?.install({request,context:()=>({project:account?project:null,busy,content_type:selected,depth:Number(depth.value),audio_cues:audio}),receive:result=>{
         input.value=result.payload.review_snapshot.map(claim=>claim.statement).join('\n').slice(0,2000);
         selected=result.payload.content_type;depth.value=String(result.payload.depth);audio=result.payload.audio_cues;
-        output=result.content;mode='unknown';lastRequest=null;chapter=0;chapters();
+        output=result.content;mode='unknown';lastRequest=null;undo=[];redo=[];chapter=0;chapters();
         message('AI draft from job '+result.job_id+' loaded. It requires human review. Save explicitly to retain editor changes.');
     }});
     start().catch(error=>message(error.message));

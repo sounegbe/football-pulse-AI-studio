@@ -50,3 +50,20 @@ test('a recheck failure preserves the job and cannot submit a billable attempt',
  const h=harness(async(url,method)=>{if(method==='POST')posts++;if(url.endsWith('/job-a'))throw Error('poll unavailable');return url.includes('generation?')?{items:[job()]}:standard(url);});
  await refresh(h);await h.get('generation-recheck').click();assert.match(h.get('generation-status').textContent,/poll unavailable/);assert.equal(posts,0);assert.equal(h.get('generation-start').disabled,true);
 });
+
+test('tone regeneration uses reviewed claims, keeps the editor, and replays an ambiguous submission',async()=>{
+ const complete=job('succeeded');complete.payload={claim_ids:['claim-a'],content_type:'youtube_script',depth:2,audio_cues:false};
+ const posts=[];let fail=true;
+ const h=harness(async(url,method,body)=>{
+  if(method==='POST'){posts.push(body);if(fail){fail=false;throw Error('ambiguous timeout');}return job();}
+  if(url.endsWith('/download'))return {text:async()=>'<img> complete draft'};
+  if(url.includes('generation?'))return {items:[complete]};return standard(url);
+ });
+ await refresh(h);await h.ui.regenerateTone('conversational');assert.equal(h.receipt(),null);
+ await h.ui.regenerateTone('conversational');assert.equal(posts.length,2);
+ assert.equal(posts[0].idempotency_key,posts[1].idempotency_key);
+ assert.equal(posts[1].tone,'conversational');assert.deepEqual(Array.from(posts[1].claim_ids),['claim-a']);
+ assert.equal(posts[1].depth,2);assert.equal(posts[1].audio_cues,false);
+ await h.ui.regenerateTone('energetic');assert.equal(posts.length,2);
+ h.ctx.project={id:'other-project'};h.ui.contextChanged();await h.ui.regenerateTone('analytical');assert.equal(posts.length,2);
+});

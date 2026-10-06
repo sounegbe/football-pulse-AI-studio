@@ -3,6 +3,7 @@ import hashlib
 import json
 import threading
 import uuid
+from typing import Literal
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from pydantic import Field
 from app.backend.api import Input, project, job_dict
@@ -16,6 +17,7 @@ router = APIRouter(prefix='/api/projects/{project_id}/generation')
 
 class GenerationCreate(ReviewedGeneration):
     idempotency_key: str = Field(min_length=1, max_length=100, pattern=r'^[a-zA-Z0-9._-]+$')
+    tone: Literal['neutral', 'analytical', 'conversational', 'energetic'] = 'neutral'
 
 class RetryCreate(Input):
     idempotency_key: str = Field(min_length=1, max_length=100, pattern=r'^[a-zA-Z0-9._-]+$')

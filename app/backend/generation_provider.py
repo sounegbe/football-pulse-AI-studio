@@ -112,7 +112,7 @@ def build_prompt(payload):
     for claim in payload['review_snapshot']:
         evidence = [{k: e[k] for k in ('source_id', 'quote', 'url', 'publisher', 'published_at')} for e in claim['evidence'] if e['relation']=='supports' and e['evidence_status']=='active' and e['source_status']=='active']
         claims.append({'claim_id':claim['claim_id'], 'statement':claim['statement'], 'event_at':claim['event_at'], 'evidence':evidence})
-    text = json.dumps({'content_type':payload['content_type'], 'depth':payload['depth'], 'audio_cues':payload['audio_cues'], 'reviewed_claims':claims}, ensure_ascii=False)
+    text = json.dumps({'content_type':payload['content_type'], 'depth':payload['depth'], 'audio_cues':payload['audio_cues'], 'tone':payload.get('tone', 'neutral'), 'reviewed_claims':claims}, ensure_ascii=False)
     if len(text.encode()) > 128000:
         raise ProviderError('generation_input_too_large')
     return text

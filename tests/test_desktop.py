@@ -13,6 +13,14 @@ from app.backend.config import ROOT
 class DesktopBackendTests(unittest.TestCase):
     setUp=test_foundation.FoundationTests.setUp
     login=test_foundation.FoundationTests.login
+
+    def test_result_route_loads_editor_and_research_controls(self):
+        response=self.client.get('/results')
+        self.assertEqual(response.status_code,200)
+        for control in ('result-tone-open','result-download','draft-editor','editor-history','revision-restore'):
+            self.assertIn('id="'+control+'"',response.text)
+        self.assertIn('/static/js/research-ui.js',response.text)
+        self.assertLess(response.text.index('/static/js/research-ui.js'),response.text.index('/static/js/desktop.js'))
     project=test_foundation.FoundationTests.project
 
     def save(self,p,version=0,**extra):

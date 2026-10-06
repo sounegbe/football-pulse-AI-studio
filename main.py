@@ -133,6 +133,7 @@ def create_app(settings=None, generation_config=None, generation_provider=None, 
         return (ROOT / 'app/templates/workspace.html').read_text(encoding='utf-8')
 
     @application.get('/desktop', response_class=HTMLResponse)
+    @application.get('/results', response_class=HTMLResponse)
     def desktop_creator():
         return (ROOT / 'app/templates/workspace_desktop.html').read_text(encoding='utf-8')
 

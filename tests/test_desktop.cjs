@@ -18,3 +18,11 @@ test('response can be saved only with its original request settings',()=>{
  const a={news:'notes',content_type:'youtube_script',depth:2,audio_cues:false};assert.equal(core.sameSettings(a,{...a}),true);
  for(const changed of [{news:'changed'},{content_type:'social_post'},{depth:3},{audio_cues:true}])assert.equal(core.sameSettings(a,{...a,...changed}),false);
 });
+test('editor formatting preserves selected literal text and enforces the size limit',()=>{
+ const text='Before <img> 😀 after';const start=text.indexOf('<'),end=text.indexOf(' after');
+ const change=core.editSelection(text,start,end,'bold');assert.equal(change.value,'Before **<img> 😀** after');
+ assert.equal(change.value.slice(change.start,change.end),'<img> 😀');
+ assert.equal(core.editSelection('x'.repeat(200000),0,0,'timecode'),null);
+ assert.equal(core.editSelection(text,start,end,'unknown'),null);
+ const cue=core.editSelection('Host: ',6,6,'broll');assert.match(cue.value,/B-ROLL: describe/);assert.match(cue.value,/^Host: /);
+});

@@ -3,7 +3,7 @@ import os
 import re
 import uuid
 from contextlib import asynccontextmanager
-from fastapi.responses import Response
+from fastapi.responses import Response, RedirectResponse
 from main import create_app
 from app.backend.database import timestamp
 
@@ -27,6 +27,8 @@ app.router.lifespan_context = demo_lifespan
 
 @app.middleware("http")
 async def demo_notice(request, call_next):
+    if request.url.path == '/':
+        return RedirectResponse('/desktop')
     response = await call_next(request)
     if "text/html" not in response.headers.get("content-type", ""):
         return response

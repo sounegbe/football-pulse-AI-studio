@@ -14,7 +14,16 @@
     }
     function fingerprint(draft) {return JSON.stringify([draft.news,draft.content,draft.content_type,draft.depth,Boolean(draft.audio_cues),draft.content_mode]);}
     function sameSettings(a,b) {return a.news === b.news && a.content_type === b.content_type && a.depth === b.depth && a.audio_cues === b.audio_cues;}
-    const api={formats,validateRequest,splitChapters,fingerprint,sameSettings};
+    function editSelection(text,start,end,kind) {
+        const selected=text.slice(start,end), wrap={bold:['**','**'],italic:['_','_'],heading:['## ',''],quote:['> ',''],bullet:['- ','']};
+        const cues={timecode:'[TIMECODE 00:00]',broll:'[B-ROLL: describe the required visual]',audio:'[AUDIO CUE: describe the required sound]'};
+        if(!wrap[kind]&&!cues[kind])return null;
+        const insert=wrap[kind]?wrap[kind][0]+selected+wrap[kind][1]:cues[kind];
+        const value=text.slice(0,start)+insert+text.slice(end);
+        if(Array.from(value).length>200000)return null;
+        return {value,start:start+(wrap[kind]?.[0].length||0),end:start+(wrap[kind]?.[0].length||0)+(wrap[kind]?selected.length:insert.length)};
+    }
+    const api={formats,validateRequest,splitChapters,fingerprint,sameSettings,editSelection};
     if(typeof module!=='undefined'&&module.exports)module.exports=api;
     else root.PulseDesktop=api;
 })(typeof window!=='undefined'?window:{});
