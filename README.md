@@ -1,5 +1,32 @@
 # Football Pulse AI Studio
 
+## Login recovery checkpoint — October 9, 2026
+
+Sign-in now normalizes surrounding whitespace and case in usernames, matching
+local account creation. Passwords remain exact, including surrounding spaces.
+Accounts must exist in the same `STUDIO_DATA_DIR` used by the running server.
+The API key enables provider access; it does not create a workspace account.
+
+From the project directory, create a missing account or reset an existing one:
+
+```bash
+.venv/bin/python manage.py create-user 2solo
+.venv/bin/python manage.py reset-password 2solo
+```
+
+Run only the command needed. Both prompt privately for the password and
+confirmation. Reset revokes all sessions for that account and preserves its
+projects, drafts and assets. It clears the account sign-in attempt bucket;
+the client-address rate limit stays in effect. This is a trusted local command,
+not a public password-recovery endpoint. Restart/reopen the sign-in form and
+use the new password at `/desktop`.
+
+This checkpoint passed 81 Python tests, 26 JavaScript tests and the real HTTP
+restart walkthrough. The cloud browser blocked the localhost preview, so visual
+sign-in verification and reproduction on the user's local database remain
+pending. No real account was reset or live provider request sent. See
+`docs/LOGIN_RECOVERY_REPORT.md`. GitHub synchronization is reported separately.
+
 M1 provides a working creator form and a **test response API**. AI generation is not connected. The supplied Stitch designs remain the visual source of truth for later integration; this milestone preserves the existing creator page.
 
 ## Run

@@ -44,6 +44,21 @@ def provision_user(database, username, password):
     return user_id
 
 
+def reset_password(database, username, password):
+    """Trusted local recovery; revoke all sessions without deleting saved work."""
+    if not 12 <= len(password) <= 128:
+        raise ValueError('Password must be 12–128 characters')
+    username = username.strip().lower()
+    encoded = hash_password(password)
+    with database.transaction(write=True) as db:
+        user = db.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+        if not user:
+            raise ValueError('Account not found. Use create-user for a new account.')
+        db.execute('UPDATE users SET password_hash=? WHERE id=?', (encoded, user['id']))
+        db.execute('DELETE FROM sessions WHERE user_id=?', (user['id'],))
+        db.execute('DELETE FROM login_attempts WHERE bucket=?', (digest('user:' + username),))
+
+
 def check_origin(request):
     origin = request.headers.get('origin')
     if origin is not None and origin not in request.app.state.settings.allowed_origins:

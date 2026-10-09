@@ -6,7 +6,7 @@ import uuid
 from typing import Literal
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator
 from app.backend.database import timestamp
 from app.backend.security import COOKIE, check_origin, current_user, digest, fail, verify_password
 
@@ -20,6 +20,11 @@ class Login(BaseModel):
     model_config = ConfigDict(extra='forbid')
     username: str = Field(min_length=3, max_length=64, pattern=r'^[a-zA-Z0-9._-]+$')
     password: str = Field(min_length=1, max_length=128)
+
+    @field_validator('username', mode='before')
+    @classmethod
+    def normalize_username(cls, value):
+        return value.strip().lower() if isinstance(value, str) else value
 
 class ProjectCreate(Input):
     title: str = Field(min_length=1, max_length=200)
