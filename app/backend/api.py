@@ -1,8 +1,10 @@
 import hashlib
 import json
+import sqlite3
 import secrets
 import time
 import uuid
+from app.backend.security import provision_user
 from typing import Literal
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import FileResponse
@@ -25,6 +27,22 @@ class Login(BaseModel):
     @classmethod
     def normalize_username(cls, value):
         return value.strip().lower() if isinstance(value, str) else value
+
+class Register(Login):
+    password: str = Field(min_length=12, max_length=128)
+
+
+@router.post('/auth/register', status_code=201)
+def register(body: Register, request: Request):
+    check_origin(request)
+    if request.headers.get('x-studio-request') != '1':
+        fail(403, 'request_header_required', 'The studio request header is required.')
+    try:
+        user_id = provision_user(request.app.state.database, body.username, body.password)
+    except sqlite3.IntegrityError:
+        fail(409, 'username_taken', 'That username is unavailable.')
+    return {'user': {'id': user_id, 'username': body.username}}
+
 
 class ProjectCreate(Input):
     title: str = Field(min_length=1, max_length=200)
