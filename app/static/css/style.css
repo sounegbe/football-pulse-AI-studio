@@ -36,7 +36,7 @@ body {
 }
 
 .topbar span {
-    color: #22c55e;
+    color: #60a5fa;
     font-weight: bold;
 }
 
@@ -109,12 +109,12 @@ body {
 }
 
 .type-button:hover {
-    border-color: #22c55e;
+    border-color: #60a5fa;
 }
 
 .type-button.active {
-    background: #166534;
-    border-color: #22c55e;
+    background: #1e3a5f;
+    border-color: #60a5fa;
 }
 
 
@@ -153,7 +153,7 @@ textarea {
 textarea:focus {
     outline: none;
 
-    border-color: #22c55e;
+    border-color: #60a5fa;
 }
 
 
@@ -170,7 +170,7 @@ textarea:focus {
 
     border-radius: 8px;
 
-    background: #22c55e;
+    background: #60a5fa;
 
     color: white;
 
@@ -182,7 +182,7 @@ textarea:focus {
 }
 
 .generate-button:hover {
-    background: #16a34a;
+    background: #3b82f6;
 }
 
 
