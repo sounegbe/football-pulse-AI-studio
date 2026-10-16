@@ -145,6 +145,10 @@ def create_app(settings=None, generation_config=None, generation_provider=None, 
     def original_mobile_creator():
         return (ROOT / 'app/templates/workspace_original.html').read_text(encoding='utf-8')
 
+    @application.get('/register', response_class=HTMLResponse)
+    def registration_page():
+        return (ROOT / 'app/templates/register.html').read_text(encoding='utf-8')
+
     @application.get('/health')
     def health():
         with database.transaction() as db:
